@@ -8,7 +8,7 @@ This project includes components for scraping football match data, cleaning and 
 
 ### 1. Scraper
 
-The script (`scraper.py`) responsible for fetching football match data from soccerstats.com for the last 7 seasons.
+The script (`scraper.py`) responsible for fetching football match data from [soccerstats](soccerstats.com/latest.asp?league=spain) for the last 7 seasons.
 
 ### 2. Cleaner
 
