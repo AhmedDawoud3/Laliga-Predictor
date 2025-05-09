@@ -2,67 +2,251 @@
 
 This project includes components for scraping football match data, cleaning and processing the data, building a machine learning model to predict match outcomes, and a Dash web application for interaction with the model.
 
-![image](https://github.com/AhmedDawoud3/Laliga-Predictor/assets/68483546/c2e86184-e294-4155-9559-a8b7612f043e)
+![LaLiga Predictor Screenshot](https://github.com/AhmedDawoud3/Laliga-Predictor/assets/68483546/c2e86184-e294-4155-9559-a8b7612f043e)
 
-## Components
+## 1. Introduction
 
-### 1. Scraper
+The Football Match Predictor is a Python-based application designed to predict the outcomes of football matches, specifically focusing on LaLiga (as suggested by the logo and data source). It encompasses a full data science pipeline:
+*   **Data Scraping:** Fetches historical match data from an online source.
+*   **Data Cleaning & Preprocessing:** Transforms raw data into a usable format and engineers relevant features.
+*   **Machine Learning Modeling:** Trains a predictive model on the processed data.
+*   **Web Application:** Provides an interactive user interface for making predictions using the trained model.
 
-The script (`scraper.py`) responsible for fetching football match data from [soccerstats](https://soccerstats.com/latest.asp?league=spain) for the last 7 seasons.
+This project demonstrates an end-to-end workflow for building a sports prediction tool.
 
-### 2. Cleaner
+## 2. Features
 
-The script (`cleaner.py`) which cleans and preprocesses the scraped data. It creates structured tables and adds features like team form to prepare the data for modeling.
+*   **Automated Data Collection:** Scrapes match data for the last 7 seasons from [soccerstats.com](https://soccerstats.com/latest.asp?league=spain).
+*   **Comprehensive Data Cleaning:** Processes raw match scores, half-time scores, and determines match winners.
+*   **Feature Engineering:** Calculates team form (number of wins in the last 5 matches) for home and away teams.
+*   **League Table Generation:** Creates season-specific league tables based on match results.
+*   **Predictive Modeling:** Utilizes a RandomForestClassifier to predict match outcomes (Home Win, Away Win, Draw).
+*   **Model Evaluation:** Includes basic model evaluation metrics (accuracy, confusion matrix, classification report).
+*   **Interactive Web Interface:** A Dash web application allows users to:
+    *   Select home and away teams from a dropdown.
+    *   Input current form for both teams using sliders.
+    *   Receive predictions for the match outcome along with win/draw probabilities.
+*   **Modular Design:** The project is broken down into distinct Python scripts for each stage of the pipeline.
 
-### 3. Model
 
-The model script (`model.py`) that builds a RandomForestClassifier pipeline. It trains the model using the cleaned data and saves the trained model (`model.pkl`) for later use.
-
-### 4. Dash Web Application
-
-The `app.py` file is a Dash web application that provides an interface for users to interact with the trained model. Users can select home and away teams, adjust their form, and make predictions on match outcomes through a user-friendly web interface.
-
-## Installation
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/AhmedDawoud3/Laliga-Predictor
-   cd Laliga-Predictor
-   ```
-2. Install dependencies:
-   ```bash
-   pip install -r requirements.txt
-   ```
-
-## Usage
-1. Scraper
-Run the scraper script to fetch football match data:
-
-```bash
-python .\scraper.py <output_csv>
+## 3. Project Structure
 ```
-* This saves a `csv` with all the matches for the past 7 seasons
-
-2. Cleaner
-Clean, preprocess, and creates the tables for the 7 season for the scraped data using the cleaner script:
-```bash
-python .\cleaner.py <csv_file> <output_folder>
+Football-Match-Predictor/
+├── .gitignore # Specifies intentionally untracked files that Git should ignore
+├── LICENSE # MIT License file
+├── README.md # This documentation file
+├── app.py # Dash web application for user interaction
+├── assets/ # Static assets for the web application
+│ ├── LL_RGB_h_color.png # LaLiga logo
+│ └── favicon.ico # Application favicon
+├── cleaner.py # Script for cleaning and preprocessing scraped data
+├── model.py # Script for training and saving the ML model
+├── requirements.txt # Python dependencies
+└── scraper.py # Script for scraping football match data
 ```
-* This saves the cleaned data to a file with 'cleaned' suffix
-* `saved_seasons.csv` -> `saved_seasons_cleaned.csv`
-3. Model
-Build the machine learning model using the model script:
-```bash
-python .\model.py <cleaned_csv> <model_output>
-```
-* This saves the model to `model_output.pkl` so it can be used in the web app
-4. Dash Web Application
-Launch the Dash web application to interact with the trained model:
-```bash
-python .\app.py <cleaned_csv> <saved_model_pkl>
-```
-* Open your web browser and navigate to [http://127.0.0.1:8050/](http://127.0.0.1:8050/) to access the application.
 
+## 4. Components Deep Dive
 
-  
-# Contributing
+### 4.1. `scraper.py` - Data Scraper
+
+*   **Purpose:** Fetches historical football match data for LaLiga.
+*   **Source:** [soccerstats.com](https://soccerstats.com/results.asp?league=spain&pmtype=bydate) and its historical season pages.
+*   **Functionality:**
+    *   Identifies URLs for the last 7 seasons of LaLiga.
+    *   Iterates through each season's URL, sending HTTP GET requests.
+    *   Parses the HTML response using `BeautifulSoup` to extract match data from tables.
+    *   Handles potential request failures with retries.
+    *   Collects data on date, home team, away team, full-time score, and half-time score.
+    *   Adds a 'Season' identifier to each match.
+*   **Output:** A single CSV file (e.g., `all_seasons.csv`) containing raw match data for all scraped seasons.
+*   **Key Libraries:** `requests`, `BeautifulSoup4`, `pandas`, `logging`.
+
+### 4.2. `cleaner.py` - Data Cleaner and Preprocessor
+
+*   **Purpose:** Cleans the raw scraped data and engineers features for model training.
+*   **Functionality:**
+    *   Reads the CSV file generated by `scraper.py`.
+    *   **Score Parsing:** Splits 'score' and 'HT' (half-time) columns into numerical home/away scores.
+    *   **Winner Determination:** Creates a 'winner' column ('home', 'away', 'draw') based on scores.
+    *   **Team-Specific Processing:** Separates data for each team's home and away performances.
+    *   **Form Calculation:**
+        *   Calculates `home_form` and `away_form` for each match.
+        *   Form is defined as the number of wins in the team's previous 5 respective (home/away) matches, using a rolling window.
+    *   **Season Table Generation:** For each season present in the data, it calculates and saves a full league table (Position, Team, MP, W, D, L, GF, GA, GD, PTS).
+*   **Input:** Raw data CSV from `scraper.py`.
+*   **Output:**
+    *   A cleaned CSV file (e.g., `all_seasons_cleaned.csv`) with processed data and engineered features.
+    *   Individual CSV files for each season's league table (e.g., `2022_2023.csv`) in the specified output folder.
+*   **Key Libraries:** `pandas`, `numpy`, `logging`.
+
+### 4.3. `model.py` - Machine Learning Model
+
+*   **Purpose:** Trains a machine learning model to predict match outcomes, evaluates it, and saves the trained model.
+*   **Functionality:**
+    *   Reads the cleaned CSV file from `cleaner.py`.
+    *   **Feature Selection:** Uses 'home' team, 'away' team, 'home_form', and 'away_form' as input features (X).
+    *   **Target Variable:** Uses the 'winner' column, mapped to numerical values (home: 1, away: -1, draw: 0), as the target (y).
+    *   **Data Splitting:** Splits the data into training and testing sets (80/20 split).
+    *   **Pipeline Construction:** Builds an `sklearn.pipeline` consisting of:
+        *   `OrdinalEncoder`: Converts categorical team names into numerical representations.
+        *   `SimpleImputer`: Fills any missing values (e.g., for form at the start of a team's record) with 0.
+        *   `RandomForestClassifier`: The predictive model, configured with specific hyperparameters (`n_estimators=250`, `min_samples_split=150`, etc.).
+    *   **Model Training:** Fits the pipeline on the training data.
+    *   **Model Evaluation:**
+        *   Calculates and logs baseline accuracy (most frequent class).
+        *   Calculates and logs training and test accuracy.
+        *   Displays and logs a confusion matrix and classification report for the test set.
+    *   **Model Persistence:** Saves the trained pipeline to a `.pkl` file using `pickle`.
+    *   **Prediction Functions:** Includes helper functions to make predictions and predict probabilities on new data.
+*   **Input:** Cleaned data CSV from `cleaner.py`.
+*   **Output:** A pickled model file (e.g., `model.pkl`).
+*   **Key Libraries:** `pandas`, `scikit-learn`, `category_encoders`, `pickle`, `logging`.
+
+### 4.4. `app.py` - Dash Web Application
+
+*   **Purpose:** Provides a user-friendly web interface to interact with the trained prediction model.
+*   **Functionality:**
+    *   Loads the pre-trained model (`.pkl` file) and the cleaned data CSV (for populating team dropdowns).
+    *   **User Interface (UI):**
+        *   Displays the LaLiga logo and application title.
+        *   Provides dropdown menus for selecting 'Home Team' and 'Away Team'.
+        *   Includes sliders for users to input 'Home Form' and 'Away Form' (number of wins in the last 5 matches, 0-5).
+        *   A "Predict Outcome" button triggers the prediction.
+        *   A designated area displays the prediction result.
+    *   **Backend Logic:**
+        *   Populates team dropdowns dynamically from the unique team names in the dataset.
+        *   On button click, takes the selected teams and form values as input.
+        *   Prepares the input data in the format expected by the model.
+        *   Uses the loaded model to predict the outcome (1, 0, or -1) and outcome probabilities.
+        *   Formats and displays the prediction (e.g., "Team X wins") and the percentage chances for home win, draw, and away win.
+*   **Input:**
+    *   Cleaned data CSV (e.g., `all_seasons_cleaned.csv`) for team list generation.
+    *   Trained model file (e.g., `model.pkl`).
+*   **Key Libraries:** `dash`, `dash_core_components`, `dash_html_components`, `pandas`, `pickle`.
+
+## 5. Technology Stack
+
+*   **Programming Language:** Python 3.x
+*   **Data Handling & Manipulation:** Pandas, NumPy
+*   **Web Scraping:** Requests, BeautifulSoup4
+*   **Machine Learning:** Scikit-learn, Category-Encoders
+*   **Web Application Framework:** Dash, Plotly
+*   **Serialization:** Pickle
+*   **Logging:** Python `logging` module
+
+## 6. Setup and Installation
+
+1.  **Clone the Repository:**
+    ```bash
+    git clone https://github.com/AhmedDawoud3/Laliga-Predictor.git
+    cd Laliga-Predictor
+    ```
+
+2.  **Create and Activate a Virtual Environment (Recommended):**
+    ```bash
+    python -m venv venv
+    # On Windows
+    venv\Scripts\activate
+    # On macOS/Linux
+    source venv/bin/activate
+    ```
+
+3.  **Install Dependencies:**
+    ```bash
+    pip install -r requirements.txt
+    ```
+
+## 7. Usage - Workflow
+
+The project is designed to be run as a sequence of scripts:
+
+### Step 1: Scrape Data
+Run `scraper.py` to fetch the latest and historical match data.
+```bash
+python scraper.py <output_csv_filename_without_extension>
+# Example:
+python scraper.py all_seasons
+```
+*   This will create `all_seasons.csv` (or your specified name) in the root directory.
+
+### Step 2: Clean and Preprocess Data
+Run `cleaner.py` to clean the scraped data and generate features.
+```bash
+python cleaner.py <input_csv_filepath> <output_folder_for_tables>
+# Example (using output from Step 1):
+python cleaner.py all_seasons.csv season_tables
+```
+*   This creates:
+    *   `all_seasons_cleaned.csv` (if input was `all_seasons.csv`).
+    *   A folder named `season_tables` (or your specified name) containing CSV files for each season's league table.
+
+### Step 3: Train the Model
+Run `model.py` to train the RandomForestClassifier model.
+```bash
+python model.py <cleaned_csv_filepath> <model_output_filename_without_extension>
+# Example (using cleaned data from Step 2):
+python model.py all_seasons_cleaned.csv model
+```
+*   This will create `model.pkl` (or your specified name) in the root directory, containing the trained model.
+*   Evaluation metrics will be printed to the console.
+
+### Step 4: Launch the Web Application
+Run `app.py` to start the Dash web server.
+```bash
+python app.py <cleaned_csv_filepath> <saved_model_pkl_filepath>
+# Example (using outputs from Step 2 and Step 3):
+python app.py all_seasons_cleaned.csv model.pkl
+```
+*   Open your web browser and navigate to [http://127.0.0.1:8050/](http://127.0.0.1:8050/) to access the application.
+*   Select teams, adjust form, and click "Predict Outcome" to see predictions.
+
+## 8. Model Details
+
+*   **Model Type:** RandomForestClassifier
+*   **Features Used:** `home` (team name), `away` (team name), `home_form` (numeric 0-5), `away_form` (numeric 0-5).
+*   **Target Variable:** `winner`, encoded as:
+    *   `1`: Home team wins
+    *   `0`: Draw
+    *   `-1`: Away team wins
+*   **Preprocessing:**
+    *   Team names (`home`, `away`) are ordinally encoded.
+    *   Missing form values (e.g., for the first few games where a 5-game rolling window isn't possible) are imputed with `0`.
+*   **Hyperparameters (RandomForestClassifier):**
+    *   `n_estimators`: 250
+    *   `min_samples_split`: 150
+    *   `min_impurity_decrease`: 0.0001
+    *   `random_state`: 42 (for reproducibility)
+    *   `n_jobs`: -1 (use all available cores)
+    *   `max_features`: "sqrt"
+
+## 9. Potential Enhancements & Future Work
+
+*   **Advanced Feature Engineering:** Incorporate more features like:
+    *   Head-to-head statistics.
+    *   Average goals scored/conceded.
+    *   Player availability/injuries (if data is accessible).
+    *   Elo ratings or other team strength indicators.
+*   **Hyperparameter Tuning:** Use GridSearchCV or RandomizedSearchCV for more optimal model parameters.
+*   **Alternative Models:** Experiment with other classification algorithms (e.g., Gradient Boosting, XGBoost, Neural Networks).
+*   **Data Source Expansion:** Integrate data from other leagues or more detailed match event data.
+*   **Database Integration:** Store scraped and processed data in a database (e.g., SQLite, PostgreSQL) for better management.
+*   **Automated Pipeline:** Use tools like Apache Airflow or Prefect to orchestrate the data pipeline.
+*   **Deployment:** Deploy the web application to a cloud platform (e.g., Heroku, AWS, Google Cloud).
+*   **Improved UI/UX:** Enhance the web application's design and interactivity.
+*   **CI/CD:** Implement Continuous Integration/Continuous Deployment practices.
+
+## 10. Contributing
+
 Contributions are welcome! Please feel free to fork the repository, make pull requests, or open issues for any bugs or feature requests.
+
+1.  Fork the Project.
+2.  Create your Feature Branch (`git checkout -b feature/AmazingFeature`).
+3.  Commit your Changes (`git commit -m 'Add some AmazingFeature'`).
+4.  Push to the Branch (`git push origin feature/AmazingFeature`).
+5.  Open a Pull Request.
+
+## 11. License
+
+This project is licensed under the MIT License. See the `LICENSE` file for details.
+
+
