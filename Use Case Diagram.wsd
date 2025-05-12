@@ -1,0 +1,37 @@
+@startuml
+' Use Case Diagram for Football Match Predictor (Vertical Layout)
+
+top to bottom direction
+skinparam packageStyle rectangle
+
+actor "Data Scientist / Admin" as Admin
+actor User
+
+rectangle "Football Match Predictor System" {
+  usecase "Scrape Match Data" as UC_Scrape
+  usecase "Clean & Process Data" as UC_Clean
+  usecase "Train Prediction Model" as UC_Train
+  usecase "View Prediction Interface" as UC_View
+  usecase "Select Teams" as UC_Select
+  usecase "Set Team Form" as UC_Form
+  usecase "Request Match Prediction" as UC_Predict
+  usecase "View Prediction Result" as UC_Result
+}
+
+Admin --> UC_Scrape
+Admin --> UC_Clean
+Admin --> UC_Train
+
+User --> UC_View
+UC_View <.. UC_Select : <<include>>
+UC_View <.. UC_Form : <<include>>
+UC_View <.. UC_Predict : <<include>>
+UC_Predict <.. UC_Result : <<include>>
+
+' Dependencies between backend and frontend use cases
+UC_Clean ..> UC_Scrape : <<depends>> (Needs raw data)
+UC_Train ..> UC_Clean : <<depends>> (Needs cleaned data)
+UC_Predict ..> UC_Train : <<depends>> (Needs trained model)
+UC_Select ..> UC_Clean : <<depends>> (Needs team list from cleaned data)
+
+@enduml

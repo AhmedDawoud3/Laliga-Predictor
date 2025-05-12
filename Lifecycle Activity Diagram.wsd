@@ -1,0 +1,87 @@
+@startuml
+title Activity Diagram: End-to-End Workflow (Dev → CI/CD → Prod → User)
+
+partition Developer {
+  start
+  :Write/Modify Code\n(e.g., update app.py, cleaner.py);
+  :Commit and Push Code Changes;
+}
+
+partition "Version Control System (Git)" {
+  :Receive Code Push;
+  if (Push to 'main' or\ndesignated deploy branch?) then (yes)
+    :Trigger CI/CD Deployment Pipeline;
+  else (no)
+    :Trigger CI Build/Test\nPipeline Only;
+    note right: e.g., Feature‐branch check
+    stop
+  endif
+}
+
+partition "CI/CD Platform\n(e.g., GitHub Actions)" {
+  :Start Triggered Pipeline;
+  :Checkout Code from Repository;
+  :Setup Python Environment;
+  :Install Dependencies (\`requirements.txt\`);
+  
+  partition "Build & Test Phase (CI)" {
+    :Run Linters / Static Analysis;
+    :Run Unit Tests (Hypothetical);
+    :Run Integration Tests (Hypothetical);
+    note right: Only re-run pipeline steps if core logic changed
+  }
+  
+  if (All Checks & Tests Passed?) then (yes)
+    :Prepare Deployment Artifacts\n(Includes app.py,\nupdated model.pkl*,\nupdated data.csv*);
+    note right: *If re-generated in CI
+  else (no)
+    :Pipeline Failed;
+    :Notify Developer;
+    stop
+  endif
+  
+  :Initiate Deployment to Production;
+}
+
+partition "Production Server" {
+  :Receive Deployment Signal from CI/CD;
+  :Fetch Latest Code & Artifacts\n(app.py, model.pkl, data.csv, etc.);
+  :Stop Old Application Instance (if running);
+  :Deploy New Application Files;
+  :Install/Update Dependencies (if needed);
+  :Apply Configurations / Secrets;
+  :Start New Application Instance\n(\`python app.py all_seasons_cleaned.csv model.pkl\`);
+  :Run Health Checks / Smoke Tests;
+}
+
+partition "CI/CD Platform\n(Monitoring)" {
+  :Monitor Deployment Status;
+  if (Deployment &\nHealth Checks Successful?) then (yes)
+    :Mark Deployment Successful;
+    :Notify Stakeholders (Optional);
+  else (no)
+    :Deployment Failed;
+    :Initiate Rollback (Optional);
+    :Notify Developer/Operations;
+    stop
+  endif
+}
+
+partition "End User Interaction" {
+  :Access Deployed Web App URL\n(via Browser);
+}
+
+partition "Production Server" {
+  :Application Server Receives Request;
+  :Loads Model (model.pkl) & Data (data.csv);
+  :Process User Input\n(Selected Teams, Form);
+  :Generate Prediction using Loaded Model;
+  :Send HTML Response Back to User;
+}
+
+partition "End User Interaction" {
+  :Receive and View Prediction Result\nin Browser;
+  stop
+}
+
+@enduml

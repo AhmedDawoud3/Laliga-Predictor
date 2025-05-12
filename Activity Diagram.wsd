@@ -1,0 +1,57 @@
+@startuml
+' Activity Diagram: Data Processing and Model Training Workflow
+
+start
+
+partition "Scraper Script" {
+  :Fetch Season URLs;
+  :Loop through Seasons;
+  :Scrape Season Data (HTTP GET, Parse HTML);
+  note right: Handles retries
+  :Combine Season DataFrames;
+  :Save Raw Data to CSV;
+}
+
+partition "File System" {
+  :raw_data.csv;
+}
+
+partition "Cleaner Script" {
+  :Read Raw Data CSV;
+  :Parse Scores (Full-time, Half-time);
+  :Determine Match Winner;
+  :Calculate Team Form (Rolling Window);
+  :Generate League Tables per Season;
+  :Save Cleaned Data to CSV;
+  :Save Season Tables to CSVs;
+}
+
+partition "File System" {
+  :cleaned_data.csv;
+  :"season_tables/*.csv";
+}
+
+partition "Model Trainer Script" {
+  :Read Cleaned Data CSV;
+  :Select Features (Teams, Form);
+  :Define Target Variable (Winner Code);
+  :Split Data (Train/Test);
+  :Build Preprocessing & Model Pipeline\n(OrdinalEncoder, SimpleImputer, RandomForest);
+  note right: Includes hyperparameter settings
+  :Train Model (Fit Pipeline);
+  :Evaluate Model\n(Accuracy, Confusion Matrix, Classification Report);
+  note right: Logs metrics
+  :Save Trained Model (Pickle);
+}
+
+partition "File System" {
+  :model.pkl;
+}
+
+partition "End User Interaction" {
+  :Web App Loads Model and Data;
+  :(User makes prediction via Web App);
+}
+
+stop
+@enduml

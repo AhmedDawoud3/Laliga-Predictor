@@ -1,0 +1,110 @@
+@startuml
+' Class Diagram for Football Match Predictor
+
+skinparam classAttributeIconSize 0
+hide empty members
+
+class Scraper {
+  - base_url : String
+  - result_url : String
+  - output_filename : String
+  + fetch_page(url) : Response
+  + parse_table(soup, id, text) : DataFrame
+  + scrape_season(url, season_name) : DataFrame
+  + get_season_urls(soup) : List<Tuple>
+  + main(filename) : void
+}
+
+class Cleaner {
+  - input_csv : String
+  - output_folder : String
+  + wrangle(filename) : DataFrame
+  + calculate_season_table(df, season) : DataFrame
+  + process_teams(df) : Dict
+  + add_team_form(df, teams) : void
+  + main(input_csv, output_folder) : void
+}
+
+class ModelTrainer {
+  - input_csv : String
+  - model_output_path : String
+  + wrangle(filename) : DataFrame
+  + preprocess_data(df) : Tuple<DataFrame, Series>
+  + build_pipeline() : Pipeline
+  + evaluate_model(model, X_train, y_train, X_test, y_test) : void
+  + save_model(model, filepath) : void
+  + load_model(filepath) : Pipeline
+  + predict(model, X) : Series
+  + predict_proba(model, X) : DataFrame
+  + main(csv_file, out_model_filepath) : void
+}
+
+class MatchData {
+  + date : String
+  + home_team : String
+  + away_team : String
+  + home_score : int
+  + away_score : int
+  + HT_home_score : int
+  + HT_away_score : int
+  + winner : String  // 'home', 'away', 'draw'
+  + season : String
+  + home_form : int {nullable}
+  + away_form : int {nullable}
+}
+
+class SeasonTable {
+  + position : int
+  + Team : String
+  + MP : int
+  + W : int
+  + D : int
+  + L : int
+  + GF : int
+  + GA : int
+  + GD : int
+  + PTS : int
+}
+
+class PredictionModel {
+  - model : Pipeline <<sklearn>>
+  + predict(input_data) : List<int>
+  + predict_proba(input_data) : List<List<float>>
+}
+
+class WebApp {
+  - model : PredictionModel
+  - data : DataFrame <<pandas>>
+  - app : DashApp <<dash>>
+  + load_model(filepath) : PredictionModel
+  + predict_outcome(home, away, h_form, a_form, model) : String/HTML
+  + initialize_app() : DashApp
+  + setup_layout(app) : HTMLDiv
+  + setup_callbacks(app, df, model) : void
+  + run_app(app) : void
+  + main(csv_file, model_filepath) : void
+}
+
+class UserInterface {
+  <<Dash Components>>
+  + HomeTeamDropdown : Dropdown
+  + AwayTeamDropdown : Dropdown
+  + HomeFormSlider : Slider
+  + AwayFormSlider : Slider
+  + PredictButton : Button
+  + ResultOutput : Div
+}
+
+' Relationships
+Scraper ..> MatchData : <<creates>> (Raw Data)
+Cleaner ..> MatchData : <<reads>> (Raw) \n <<produces>> (Cleaned)
+Cleaner ..> SeasonTable : <<creates>>
+ModelTrainer ..> MatchData : <<reads>> (Cleaned)
+ModelTrainer ..> PredictionModel : <<creates & saves>>
+WebApp ..> PredictionModel : <<loads & uses>>
+WebApp ..> MatchData : <<loads>> (For team list)
+WebApp "1" *-- "1" UserInterface : <<builds>>
+UserInterface ..> WebApp : <<triggers callbacks>>
+PredictionModel ..> WebApp : <<returns prediction>>
+
+@enduml

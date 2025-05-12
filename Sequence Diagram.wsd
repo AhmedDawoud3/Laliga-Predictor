@@ -1,0 +1,60 @@
+@startuml
+' Sequence Diagram: User Makes Prediction
+
+actor User
+participant ":UserInterface\n(Dash Components)" as UI
+participant ":WebAppController\n(app.py callbacks)" as Controller
+participant ":PredictionModel\n(loaded .pkl)" as Model
+
+activate User
+User -> UI : Select Home Team
+activate UI
+UI --> User : Update Home Team Dropdown
+deactivate UI
+
+User -> UI : Select Away Team
+activate UI
+UI --> User : Update Away Team Dropdown
+deactivate UI
+
+User -> UI : Set Home Form (Slider)
+activate UI
+UI --> User : Update Home Form Display
+deactivate UI
+
+User -> UI : Set Away Form (Slider)
+activate UI
+UI --> User : Update Away Form Display
+deactivate UI
+
+User -> UI : Click 'Predict Outcome' Button
+activate UI
+UI -> Controller : trigger_prediction(home, away, h_form, a_form)
+deactivate UI
+activate Controller
+
+Controller -> Controller : prepare_input_data(home, away, h_form, a_form)
+note right: Create DataFrame for model
+
+Controller -> Model : predict(input_data)
+activate Model
+Model --> Controller : prediction_code [-1, 0, 1]
+deactivate Model
+
+Controller -> Model : predict_proba(input_data)
+activate Model
+Model --> Controller : probabilities [away, draw, home]
+deactivate Model
+
+Controller -> Controller : format_result(prediction_code, probabilities, home, away)
+note right: Determine winner text, format probabilities
+
+Controller -> UI : display_result(formatted_output)
+activate UI
+deactivate Controller
+
+UI -> User : Show Prediction Result and Probabilities
+deactivate UI
+deactivate User
+
+@enduml

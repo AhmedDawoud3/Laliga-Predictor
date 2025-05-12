@@ -1,0 +1,51 @@
+@startuml
+skinparam layoutDirection TB
+title State Machine Diagram
+[*] --> AwaitingUserInput
+
+state AwaitingUserInput {
+    AwaitingUserInput : Home/Away teams not selected or partially selected.;
+    AwaitingUserInput : Form sliders at default or user-adjusted.;
+    AwaitingUserInput : Prediction result area is empty.;
+}
+
+state InputsComplete {
+    InputsComplete : Home/Away teams selected.;
+    InputsComplete : Form sliders adjusted.;
+    InputsComplete : Prediction result area is empty.;
+}
+
+state DisplayingInputError {
+    DisplayingInputError : Prediction result area shows "Please select both…";
+}
+
+state ProcessingPrediction {
+    ProcessingPrediction  : Model's predict() and predict_proba() are being called.;
+}
+
+state DisplayingPrediction {
+    DisplayingPrediction : Prediction result area shows outcome and probabilities.;
+}
+
+AwaitingUserInput --> InputsComplete : User selects both teams
+InputsComplete --> AwaitingUserInput : User clears a team selection
+AwaitingUserInput --> DisplayingInputError : User clicks "Predict" [Missing Teams]
+
+note on link
+  This happens if the Predict button is clicked
+  but either home_team or away_team is unset.
+end note
+
+InputsComplete --> ProcessingPrediction : User clicks "Predict" [Valid Inputs]
+note on link
+  This happens if the Predict button is clicked
+  and both home_team and away_team are set.
+end note
+
+ProcessingPrediction --> DisplayingPrediction : Model prediction successful
+ProcessingPrediction --> DisplayingInputError : Model prediction error (e.g., unexpected data)
+
+DisplayingPrediction --> AwaitingUserInput : User changes inputs / wants new prediction
+DisplayingInputError --> AwaitingUserInput : User acknowledges error / changes inputs
+
+@enduml
